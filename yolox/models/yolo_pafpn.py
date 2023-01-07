@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 # Copyright (c) Megvii Inc. All rights reserved.
-
+import timm
 import torch
 import torch.nn as nn
 
@@ -24,7 +24,8 @@ class YOLOPAFPN(nn.Module):
         act="silu",
     ):
         super().__init__()
-        self.backbone = CSPDarknet(depth, width, depthwise=depthwise, act=act)
+        # self.backbone = CSPDarknet(depth, width, depthwise=depthwise, act=act)
+        self.backbone = timm.create_model('convnext_atto', pretrained=True, features_only=True)
         self.in_features = in_features
         self.in_channels = in_channels
         Conv = DWConv if depthwise else BaseConv
@@ -90,10 +91,10 @@ class YOLOPAFPN(nn.Module):
         """
 
         #  backbone
-        out_features = self.backbone(input)
-        features = [out_features[f] for f in self.in_features]
-        [x2, x1, x0] = features
-
+        # out_features = self.backbone(input)
+        # features = [out_features[f] for f in self.in_features]
+        # [x2, x1, x0] = features
+        x2, x1, x0, _ = self.backbone(input)
         fpn_out0 = self.lateral_conv0(x0)  # 1024->512/32
         f_out0 = self.upsample(fpn_out0)  # 512/16
         f_out0 = torch.cat([f_out0, x1], 1)  # 512->1024/16
